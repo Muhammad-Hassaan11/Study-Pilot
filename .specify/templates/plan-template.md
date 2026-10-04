@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/sp.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the `/sp.plan` command. See `.chatgpt/commands/sp.plan.md` for the execution workflow. Product phases are defined in `specs/spec.md`; research/design stages below are planning stages, not replacement product phases.
 
 ## Summary
 
@@ -31,7 +31,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- Read `specs/constitution.md` and verify its exact SpecKit mirror at `.specify/memory/constitution.md`.
+- Preserve guest/Google parity, personal ownership, current room membership, and equal shared editing.
+- Verify the latest stable Next.js version at implementation time and lock the exact dependency; no prerelease baseline.
+- Identify academic arithmetic, rounding, missing-data and version invariants with independent expected-value tests.
+- Address persistence, retry, stale edits, recovery, deletion, and applicable retention/reporting decisions.
+- Include phone/keyboard/theme verification and realistic performance measurement for affected journeys.
+- For Study Help, cover source revision/coverage, output evaluation, explicit external sharing, and bounded quota/generation work.
+- Resolve applicable launch decisions in `specs/spec.md`; do not invent privileges, provider behavior, or retention promises.
+- Trace planned changes to the affected phase requirement IDs. Document any constitutional exception below.
 
 ## Project Structure
 

@@ -1,4 +1,4 @@
-# Claude Code Rules
+# Chatgpt Code Rules
 
 This file is generated during init for the selected agent.
 
@@ -198,7 +198,9 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Basic Project Structure
 
-- `.specify/memory/constitution.md` — Project principles
+- `specs/constitution.md` — Canonical StudyPilot principles and latest-stable Next.js constraint
+- `.specify/memory/constitution.md` — Exact mirror of the canonical constitution for SpecKit
+- `specs/spec.md` — Product scope, phase index, source traceability and release decisions
 - `specs/<feature>/spec.md` — Feature requirements
 - `specs/<feature>/plan.md` — Architecture decisions
 - `specs/<feature>/tasks.md` — Testable tasks with cases
@@ -207,4 +209,4 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 - `.specify/` — SpecKit Plus templates and scripts
 
 ## Code Standards
-See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+See `specs/constitution.md` (mirrored at `.specify/memory/constitution.md`) for code quality, testing, performance, security, and architecture principles. For documentation-only requests, do not run feature-branch scaffolding or create implementation plans/tasks unless requested.

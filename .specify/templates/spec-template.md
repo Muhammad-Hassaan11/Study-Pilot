@@ -5,6 +5,13 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
+**Project guidance**: Follow `specs/constitution.md` and the phase boundaries in `specs/spec.md`.
+Keep technical choices in a separate constraints reference; describe requirements and success
+criteria as user-observable behavior. Distinguish confirmed requirements, adopted defaults,
+and unresolved release gates. Document applicable privacy, arithmetic, persistence,
+accessibility, failure-state and source-grounding requirements. A specification-only request
+may retain the current branch when explicitly requested; do not claim a branch was created.
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -113,3 +120,12 @@
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+## Sources and Traceability
+
+[Link supplied source documents and applicable acceptance IDs; identify any missing referenced sources.]
+
+## Dependencies, Assumptions and Phase Exit
+
+[Name prerequisite phases, independent test scope, adopted defaults, unresolved launch
+decisions with safe interim behavior, explicit exclusions, and required release evidence.]

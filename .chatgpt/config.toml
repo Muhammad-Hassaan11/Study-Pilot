@@ -1,0 +1,13 @@
+# Project permissions configuration.
+# ChatGPT/Codex loads project configuration from .codex/config.toml.
+# This file must be placed there to become active.
+
+# Ask for approval when an action requires additional permissions.
+approval_policy = "on-request"
+
+# Allow edits within the workspace.
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+# Network access requires approval.
+network_access = false
