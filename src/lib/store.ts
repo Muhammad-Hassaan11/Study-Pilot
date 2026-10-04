@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { applyMutation, initialData, type Mutation, type StudyData } from './model';
+import { materialize } from './academic-data';
 
 export class StoreError extends Error { constructor(message: string, public status: number) { super(message); } }
 export function createStore(path: string) {
@@ -16,6 +17,10 @@ export function createStore(path: string) {
   function student(token: string) {
     const row = db.prepare('SELECT students.id, students.data FROM sessions JOIN students ON students.id=sessions.student WHERE token=? AND expires>?').get(hash(token), Date.now()) as { id: string; data: string } | undefined;
     if (!row) throw new StoreError('Your session has ended. Continue as a new guest to start a new workspace.', 401);
+    const saved = JSON.parse(row.data) as StudyData;
+    const upgraded = materialize(saved);
+    const serialized = JSON.stringify(upgraded);
+    if (serialized !== row.data) { db.prepare('UPDATE students SET data=? WHERE id=?').run(serialized,row.id); row.data = serialized; }
     return row;
   }
   return {

@@ -1,0 +1,7 @@
+# Phase 4 implementation plan
+
+Add immutable grading-system versions with student-entered contiguous lower thresholds, scale identity, point maximum and explicit no-rounding or nearest-whole half-up mapping. Every course chooses a version. New versions apply only to reviewed course IDs; completed courses require a separate explicit historical remap with before/after preview. Raw assessments remain unchanged and remaps retain prior version attribution.
+
+Store decimal inputs as strings with explicit supported precision; perform weighted contributions, boundaries, inversion and GPA using exact rational arithmetic. Assessment totals may be incomplete drafts, but suppress definitive targets until exactly 100. Distinguish blank scores and zero. Support raw and grade targets, single-assessment discrete increments, unsupported-policy flags, and independently saved semester goals. Aggregate only compatible scale lineages and show each excluded course and reason.
+
+Build assessment CRUD, grading rules editor/preview, course planner, semester coverage/targets, settings integration and canonical Overview previews. Verify independent source fixtures, rounding inverse, impossible/safe/final cases, zero/blank, lost-point geometry, weighted GPA, incompatible scales, version preservation, ownership, retries and stale edits. Do not claim representative user testing or Phase 1 Google linking tests without that infrastructure.

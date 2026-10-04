@@ -1,14 +1,16 @@
 import { Temporal } from '@js-temporal/polyfill';
+import type { AcademicData, CourseTarget } from './academic-types';
+import { applyAcademic, dateInput, materialize, upgradeAcademic } from './academic-data';
 
-export type Course = { id: string; name: string; code: string; color: string; credits: string; archived: boolean };
-export type Slot = { id: string; courseId: string; weekday: number; start: string; end: string; room: string; timezone: string };
+export type Course = { id: string; name: string; code: string; color: string; credits: string; archived: boolean; periodId: string; attendanceRequirement: string; attendancePolicy: boolean; gradingPolicy: boolean; gradeRuleId: string; target: CourseTarget | null; ruleHistory: {from: string; to: string; at: string}[] };
+export type Slot = { id: string; courseId: string; weekday: number; start: string; end: string; room: string; timezone: string; fromDate: string; untilDate: string };
 export type Deadline = { id: string; courseId: string; title: string; type: 'assignment' | 'quiz' | 'exam' | 'project'; due: string; notes: string; done: boolean };
 export type Profile = { name: string; university: string; timezone: string; theme: 'light' | 'dark' | 'system' };
-export type StudyData = { revision: number; profile: Profile; courses: Course[]; slots: Slot[]; deadlines: Deadline[] };
-export type Occurrence = Slot & { date: string; startsAt: number; endsAt: number; course: Course; conflict: boolean };
+export type StudyData = AcademicData & { revision: number; profile: Profile; courses: Course[]; slots: Slot[]; deadlines: Deadline[] };
+export type Occurrence = Slot & { occurrenceId: string; date: string; startsAt: number; endsAt: number; course: Course; conflict: boolean };
 
 export function initialData(timezone = 'UTC'): StudyData {
-  return { revision: 0, profile: { name: '', university: '', timezone, theme: 'system' }, courses: [], slots: [], deadlines: [] };
+  return { schema:2, periods:[], classOccurrences:[], gradeRules:[], assessments:[], defaultAttendance:'', revision: 0, profile: { name: '', university: '', timezone, theme: 'system' }, courses: [], slots: [], deadlines: [] };
 }
 export function validTimezone(zone: string) {
   try { Temporal.Now.zonedDateTimeISO(zone); return true; } catch { return false; }
@@ -25,6 +27,15 @@ export function localInput(instant: string, timezone: string) {
 }
 export function occurrences(data: StudyData, now: number, days = 7): { items: Occurrence[]; warnings: string[] } {
   const items: Occurrence[] = [], warnings: string[] = [];
+  const snapshot = materialize(data,now), today = localDate(now,data.profile.timezone);
+  const horizon = Temporal.PlainDate.from(today).add({days}).toString();
+  for (const o of snapshot.classOccurrences) {
+    const course = data.courses.find(c => c.id === o.courseId && !c.archived);
+    const displayDate = localDate(Date.parse(o.start),data.profile.timezone);
+    if (!course || o.cancelled || displayDate < today || displayDate > horizon) continue;
+    const original = data.slots.find(s => s.id === o.slotId);
+    items.push({id:o.slotId || o.id,occurrenceId:o.id,courseId:o.courseId,weekday:Temporal.PlainDate.from(o.date).dayOfWeek%7,start:localInput(o.start,o.timezone).slice(11),end:localInput(o.end,o.timezone).slice(11),room:o.room,timezone:o.timezone,fromDate:original?.fromDate || o.date,untilDate:original?.untilDate || o.date,date:o.date,startsAt:Date.parse(o.start),endsAt:Date.parse(o.end),course,conflict:false});
+  }
   for (const slot of data.slots) {
     const course = data.courses.find(c => c.id === slot.courseId && !c.archived);
     if (!course) continue;
@@ -32,13 +43,15 @@ export function occurrences(data: StudyData, now: number, days = 7): { items: Oc
     for (let i = -1; i <= days; i++) {
       const date = first.add({ days: i });
       if (date.dayOfWeek % 7 !== slot.weekday) continue;
+      const period = data.periods.find(p => p.id === course.periodId);
+      if (date.toString() < slot.fromDate || (slot.untilDate && date.toString() > slot.untilDate) || (period?.start && date.toString() < period.start) || (period?.end && date.toString() > period.end)) continue;
       try {
         const startsAt = Date.parse(localToInstant(`${date}T${slot.start}`, slot.timezone));
         const endsAt = Date.parse(localToInstant(`${date}T${slot.end}`, slot.timezone));
         const displayDate = localDate(startsAt, data.profile.timezone);
         const today = localDate(now, data.profile.timezone);
         if (displayDate < today || displayDate > Temporal.PlainDate.from(today).add({ days }).toString()) continue;
-        items.push({ ...slot, date: date.toString(), startsAt, endsAt, course, conflict: false });
+        void startsAt; void endsAt;
       } catch { warnings.push(`${course.name} on ${date}: clock change needs a schedule adjustment.`); }
     }
   }
@@ -60,8 +73,8 @@ function string(value: unknown, label: string, max = 160, required = true): stri
 }
 function id(value: unknown) { const result = string(value, 'identifier', 64); if (!/^[a-zA-Z0-9-]+$/.test(result)) throw new Error('Invalid identifier.'); return result; }
 export type Mutation = { kind: string; payload: Record<string, unknown> };
-export function applyMutation(current: StudyData, mutation: Mutation): StudyData {
-  const data = structuredClone(current), p = mutation.payload;
+export function applyMutation(current: StudyData, mutation: Mutation, now = Date.now()): StudyData {
+  const data = materialize(upgradeAcademic(current,now),now), p = mutation.payload;
   const ownedCourse = (value: unknown) => {
     const course = data.courses.find(c => c.id === value);
     if (!course) throw new Error('Course is unavailable.');
@@ -75,10 +88,10 @@ export function applyMutation(current: StudyData, mutation: Mutation): StudyData
       break;
     }
     case 'course': {
-      const course: Course = { id: id(p.id), name: string(p.name, 'course name'), code: string(p.code, 'course code', 24, false), color: string(p.color, 'color'), credits: string(p.credits, 'credits', 8, false), archived: false };
+      const course: Course = { id: id(p.id), name: string(p.name, 'course name'), code: string(p.code, 'course code', 24, false), color: string(p.color, 'color'), credits: string(p.credits, 'credits', 8, false), archived: false, periodId:'', attendanceRequirement:data.defaultAttendance, attendancePolicy:false, gradingPolicy:false, gradeRuleId:'', target:null, ruleHistory:[] };
       if (!/^#[0-9a-f]{6}$/i.test(course.color) || (course.credits && (!Number.isFinite(Number(course.credits)) || Number(course.credits) <= 0 || Number(course.credits) > 100))) throw new Error('Use a valid color and positive credits.');
       const existing = data.courses.findIndex(c => c.id === course.id);
-      if (existing >= 0) data.courses[existing] = { ...course, archived: data.courses[existing].archived }; else data.courses.push(course);
+      if (existing >= 0) data.courses[existing] = { ...data.courses[existing],name:course.name,code:course.code,color:course.color,credits:course.credits }; else data.courses.push(course);
       break;
     }
     case 'archive': {
@@ -90,7 +103,10 @@ export function applyMutation(current: StudyData, mutation: Mutation): StudyData
       const start = string(p.start, 'start time'), end = string(p.end, 'end time'), timezone = string(p.timezone, 'timezone', 100);
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(end) || end <= start) throw new Error('End time must be after start time. Split overnight classes into separate slots.');
       if (!Number.isInteger(p.weekday) || Number(p.weekday) < 0 || Number(p.weekday) > 6 || !validTimezone(timezone)) throw new Error('Choose a valid weekday and timezone.');
-      const slot: Slot = { id: id(p.id), courseId: course.id, weekday: Number(p.weekday), start, end, room: string(p.room, 'room', 100, false), timezone };
+      const fromDate = p.fromDate ? dateInput(p.fromDate,'Schedule start') : localDate(now,timezone);
+      const untilDate = dateInput(p.untilDate,'Schedule end',true);
+      if (untilDate && untilDate < fromDate) throw new Error('Schedule end must not precede its start.');
+      const slot: Slot = { id: id(p.id), courseId: course.id, weekday: Number(p.weekday), start, end, room: string(p.room, 'room', 100, false), timezone,fromDate,untilDate };
       if (data.slots.some(s => s.id === slot.id)) throw new Error('This class already exists.');
       data.slots.push(slot); break;
     }
@@ -107,8 +123,8 @@ export function applyMutation(current: StudyData, mutation: Mutation): StudyData
       if (!deadline || typeof p.done !== 'boolean') throw new Error('Deadline is unavailable.');
       deadline.done = p.done; break;
     }
-    default: throw new Error('Unknown action.');
+    default: if (!applyAcademic(data,mutation.kind,p,now)) throw new Error('Unknown action.');
   }
   data.revision += 1;
-  return data;
+  return materialize(data,now);
 }

@@ -1,0 +1,7 @@
+# Phase 3 implementation plan
+
+Implement academic periods, course assignments, effective-dated recurring slots and immutable dated occurrence identities before attendance. Existing planner data migrates additively; old slots start tracking on migration day because earlier attendance history is unknown. A student may explicitly enter dated historical classes. Occurrences generated before a schedule edit remain bound to their original slot/date; future edits retire the old recurrence and create a new revision.
+
+Record only explicit attended/missed states; clearing restores unmarked. Validate start time and cancellation on the server. Store correction history, apply existing account ownership, revision conflict detection and idempotency. Include cancelled occurrences in review but exclude them from counts. Materialize occurrences through seven days ahead and retain past snapshots. Unknown period end never implies zero future classes.
+
+Use integer hundredths for requirements and exact rational comparisons. Verify all fixtures and defining miss/recovery inequalities, future denial, same-day duplicates, correction/clear, cancellation, recurrence preservation, default scope, persistence and account isolation. Share summary derivation between Overview and Attendance. Add mobile/keyboard browser checks and document representative human/performance measurements separately from automated evidence.
